@@ -52,10 +52,12 @@ func NewMigration() (*MigrationApp, error) {
 		return nil, err
 	}
 
-	appInstance.AddCloser(func() error {
-		db, _ := ctr.DefaultConnection.DB()
-		return db.Close()
-	})
+	appInstance.AddCloser(
+		func() error {
+			db, _ := ctr.DefaultConnection.DB()
+			return db.Close()
+		},
+	)
 
 	return &MigrationApp{
 		App:       appInstance,

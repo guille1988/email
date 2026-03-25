@@ -43,17 +43,18 @@ func NewWorker() (*app.App, error) {
 		Container: ctr,
 	}
 
-	appInstance.AddCloser(func() error {
-		db, _ := ctr.DefaultConnection.DB()
-		return db.Close()
-	})
-
-	appInstance.AddCloser(func() error {
-		if ctr.Consumer != nil {
-			return ctr.Consumer.Close()
-		}
-		return nil
-	})
+	appInstance.AddCloser(
+		func() error {
+			db, _ := ctr.DefaultConnection.DB()
+			return db.Close()
+		},
+		func() error {
+			if ctr.Consumer != nil {
+				return ctr.Consumer.Close()
+			}
+			return nil
+		},
+	)
 
 	return appInstance, nil
 }
