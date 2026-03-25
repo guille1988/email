@@ -35,7 +35,7 @@ func NewSeeder() (*SeederApp, error) {
 	}
 
 	var ctr *container.Container
-	ctr, err = container.New(cfg.Database)
+	ctr, err = container.New(cfg)
 
 	if err != nil {
 		return nil, err

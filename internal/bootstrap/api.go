@@ -1,13 +1,13 @@
 package bootstrap
 
 import (
+	"context"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
 	"email/internal/infrastructure/middlewares"
 	"email/internal/infrastructure/providers"
-	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -34,7 +34,7 @@ func NewApi() (*app.App, error) {
 	}
 
 	var ctr *container.Container
-	ctr, err = container.New(cfg.Database)
+	ctr, err = container.New(cfg)
 
 	if err != nil {
 		return nil, err
@@ -48,6 +48,13 @@ func NewApi() (*app.App, error) {
 	appInstance.AddCloser(func() error {
 		db, _ := ctr.DefaultConnection.DB()
 		return db.Close()
+	})
+
+	appInstance.AddCloser(func() error {
+		if ctr.Consumer != nil {
+			return ctr.Consumer.Close()
+		}
+		return nil
 	})
 
 	return appInstance, nil

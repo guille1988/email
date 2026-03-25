@@ -11,6 +11,22 @@ type Config struct {
 	App      AppConfig
 	Database DatabaseConfig
 	Log      LogConfig
+	RabbitMQ RabbitMQConfig
+	Mail     MailConfig
+}
+
+type MailConfig struct {
+	Host     string
+	Port     int
+	User     string
+	Password string
+}
+
+type RabbitMQConfig struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
 }
 
 // AppConfig represents the application configuration.
@@ -110,6 +126,18 @@ func New() (*Config, error) {
 			Driver: LogDriver(env.GetEnvAsString("LOG_DRIVER", string(StdoutFormat))),
 			Path:   env.GetEnvAsString("LOG_PATH", "logs/email.log"),
 			Level:  LogLevel(env.GetEnvAsString("LOG_LEVEL", string(InfoLevel))),
+		},
+		RabbitMQ: RabbitMQConfig{
+			Host:     env.GetEnvAsString("RABBITMQ_HOST", "rabbitmq"),
+			Port:     env.GetEnvAsString("RABBITMQ_PORT", "5672"),
+			User:     env.GetEnvAsString("RABBITMQ_USER", "guest"),
+			Password: env.GetEnvAsString("RABBITMQ_PASSWORD", "guest"),
+		},
+		Mail: MailConfig{
+			Host:     env.GetEnvAsString("MAIL_HOST", "mailpit"),
+			Port:     env.GetEnvAsInt("MAIL_PORT", 1025),
+			User:     env.GetEnvAsString("MAIL_USER", ""),
+			Password: env.GetEnvAsString("MAIL_PASSWORD", ""),
 		},
 	}
 

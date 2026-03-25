@@ -1,8 +1,8 @@
 package database
 
 import (
-	"email/internal/infrastructure/config"
 	"database/sql"
+	"email/internal/infrastructure/config"
 	"fmt"
 
 	"gorm.io/driver/mysql"
