@@ -106,14 +106,14 @@ func New() (*Config, error) {
 		App: AppConfig{
 			Env:  Env(env.GetEnvAsString("APP_ENV", string(LocalEnv))),
 			Host: env.GetEnvAsString("APP_HOST", "localhost"),
-			Port: env.GetEnvAsString("APP_PORT", "8081"),
+			Port: env.GetEnvAsString("APP_PORT", "8082"),
 		},
 		Database: DatabaseConfig{
 			Connections: map[ConnectionName]DatabaseConnection{
 				Default: {
 					Driver:             Driver(env.GetEnvAsString("DB_DRIVER", string(MySQLDriver))),
 					Host:               env.GetEnvAsString("DB_HOST", "mysql"),
-					Port:               env.GetEnvAsString("DB_PORT", "3306"),
+					Port:               env.GetEnvAsString("DB_PORT", "3307"),
 					Database:           env.GetEnvAsString("DB_DATABASE", "email"),
 					Username:           env.GetEnvAsString("DB_USERNAME", "email"),
 					Password:           env.GetEnvAsString("DB_PASSWORD", "email"),
