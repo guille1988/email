@@ -2,12 +2,12 @@ package bootstrap
 
 import (
 	"context"
+	"email/internal/domain/email/events"
 	"email/internal/domain/email/model"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
-	"encoding/json"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -65,12 +65,10 @@ func RunWorker(appInstance *app.App) error {
 	defer cancel()
 
 	err := appInstance.Container.Consumer.Consume(ctx, func(body []byte) error {
-		var event struct {
-			Email string `json:"email"`
-			Name  string `json:"name"`
-		}
+		var event events.UserRegistered
+		err := event.FromJson(body)
 
-		if err := json.Unmarshal(body, &event); err != nil {
+		if err != nil {
 			return err
 		}
 
@@ -82,11 +80,14 @@ func RunWorker(appInstance *app.App) error {
 			Status:  model.Pending,
 		}
 
-		if err := appInstance.Container.EmailRepository.Create(emailRecord); err != nil {
+		err = appInstance.Container.EmailRepository.Create(emailRecord)
+
+		if err != nil {
 			return err
 		}
 
-		emailBody, err := appInstance.Container.EmailService.SendWelcomeEmail(event.Email, event.Name)
+		var emailBody string
+		emailBody, err = appInstance.Container.EmailService.SendWelcomeEmail(event.Email, event.Name)
 
 		if err != nil {
 			emailRecord.Status = model.Failed
