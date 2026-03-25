@@ -1,7 +1,7 @@
 package container
 
 import (
-	"email/internal/domain/email"
+	"email/internal/domain/email/actions"
 	"email/internal/domain/email/model"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/database"
@@ -13,7 +13,7 @@ import (
 type Container struct {
 	DefaultConnection *gorm.DB
 	EmailRepository   model.Repository
-	EmailService      *email.Service
+	SendWelcomeAction *actions.SendWelcome
 	Consumer          *rabbitmq.Consumer
 	Config            *config.Config
 }
@@ -27,12 +27,12 @@ func New(cfg *config.Config) (*Container, error) {
 	}
 
 	emailRepo := model.NewRepository(defaultConnection)
-	emailService := email.NewEmailService(cfg.Mail)
+	sendWelcomeAction := actions.NewSendWelcome(cfg.Mail, emailRepo)
 
 	return &Container{
 		DefaultConnection: defaultConnection,
 		EmailRepository:   emailRepo,
-		EmailService:      emailService,
+		SendWelcomeAction: sendWelcomeAction,
 		Config:            cfg,
 	}, nil
 }

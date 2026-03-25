@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"context"
 	"email/internal/domain/email/events"
-	"email/internal/domain/email/model"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
@@ -72,33 +71,9 @@ func RunWorker(appInstance *app.App) error {
 			return err
 		}
 
-		slog.Info("processing welcome email", "email", event.Email, "name", event.Name)
+		slog.Info("processing welcome email action", "email", event.Email, "name", event.Name)
 
-		emailRecord := &model.Email{
-			To:      event.Email,
-			Subject: "Bienvenido a Go App",
-			Status:  model.Pending,
-		}
-
-		err = appInstance.Container.EmailRepository.Create(emailRecord)
-
-		if err != nil {
-			return err
-		}
-
-		var emailBody string
-		emailBody, err = appInstance.Container.EmailService.SendWelcomeEmail(event.Email, event.Name)
-
-		if err != nil {
-			emailRecord.Status = model.Failed
-			_ = appInstance.Container.EmailRepository.UpdateStatus(emailRecord.ID, model.Failed)
-			return err
-		}
-
-		emailRecord.Body = emailBody
-		emailRecord.Status = model.Sent
-
-		return appInstance.Container.EmailRepository.Update(emailRecord)
+		return appInstance.Container.SendWelcomeAction.Execute(event.Email, event.Name)
 	})
 
 	if err != nil {
