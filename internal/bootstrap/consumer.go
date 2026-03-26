@@ -3,25 +3,28 @@ package bootstrap
 import (
 	"context"
 	"email/internal/domain/email/events"
+	"email/internal/domain/email/listeners"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
+	"email/internal/infrastructure/providers"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
-// NewWorker initializes the app instance with all necessary configuration.
-func NewWorker() (*app.App, error) {
+// NewConsumer initializes the app instance with all necessary configuration.
+func NewConsumer() (*app.App, error) {
 	cfg, err := config.New()
 	if err != nil {
 		return nil, err
 	}
 
 	err = logger.New(cfg.Log)
-
 	if err != nil {
 		return nil, err
 	}
@@ -33,7 +36,9 @@ func NewWorker() (*app.App, error) {
 		return nil, err
 	}
 
-	if err := ctr.InitConsumer(); err != nil {
+	err = ctr.InitConsumer("email.service")
+
+	if err != nil {
 		return nil, err
 	}
 
@@ -58,22 +63,29 @@ func NewWorker() (*app.App, error) {
 	return appInstance, nil
 }
 
-// RunWorker starts the worker.
-func RunWorker(appInstance *app.App) error {
+// RunConsumer starts the consumer.
+func RunConsumer(appInstance *app.App) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err := appInstance.Container.Consumer.Consume(ctx, func(body []byte) error {
-		var event events.UserRegistered
-		err := event.FromJson(body)
+	provider := providers.NewEventProvider()
 
-		if err != nil {
-			return err
+	provider.Register(
+		&events.UserRegistered{},
+		&listeners.WelcomeEmail{
+			Action: appInstance.Container.SendWelcomeAction,
+		},
+	)
+
+	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
+		listener, ok := provider.GetListener(delivery.RoutingKey)
+
+		if !ok {
+			slog.Warn("no listener registered for routing key", "routing_key", delivery.RoutingKey)
+			return nil
 		}
 
-		slog.Info("processing welcome email action", "email", event.Email, "name", event.Name)
-
-		return appInstance.Container.SendWelcomeAction.Execute(event.Email, event.Name)
+		return listener.Handle(delivery)
 	})
 
 	if err != nil {
@@ -83,11 +95,11 @@ func RunWorker(appInstance *app.App) error {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 
-	slog.Info("worker is running and waiting for messages...")
+	slog.Info("consumer is running and waiting for messages...")
 	<-stop
 
 	appInstance.CloseAll()
-	slog.Info("worker stopped safely")
+	slog.Info("consumer stopped safely")
 
 	return nil
 }

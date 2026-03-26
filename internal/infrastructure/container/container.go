@@ -38,8 +38,8 @@ func New(cfg *config.Config) (*Container, error) {
 }
 
 // InitConsumer initializes the RabbitMQ consumer.
-func (container *Container) InitConsumer() error {
-	consumer, err := rabbitmq.NewConsumer(container.Config.RabbitMQ, "user.registered")
+func (container *Container) InitConsumer(queue string) error {
+	consumer, err := rabbitmq.NewConsumer(container.Config.RabbitMQ, queue)
 
 	if err != nil {
 		return err

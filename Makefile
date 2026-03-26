@@ -30,7 +30,7 @@ build-dev:
 
 build-prod:
 	docker exec $(CONTAINER_NAME) go build -o bin/migrate cmd/migrate/main.go
-	docker exec $(CONTAINER_NAME) go build -o bin/api cmd/api/main.go
+	docker exec $(CONTAINER_NAME) go build -o bin/consumer cmd/consumer/main.go
 
 run-dev:
 	docker exec $(CONTAINER_NAME) ./bin/migrate --fresh
@@ -39,7 +39,7 @@ run-dev:
 
 run-prod: build-prod
 	docker exec $(CONTAINER_NAME) ./bin/migrate
-	docker exec -it $(CONTAINER_NAME) ./bin/api
+	docker exec -it $(CONTAINER_NAME) ./bin/consumer
 
 update:
 	docker exec $(CONTAINER_NAME) go mod tidy

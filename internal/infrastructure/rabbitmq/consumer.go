@@ -63,7 +63,7 @@ func NewConsumer(cfg config.RabbitMQConfig, queue string) (*Consumer, error) {
 	}, nil
 }
 
-func (consumer *Consumer) Consume(ctx context.Context, handler func(body []byte) error) error {
+func (consumer *Consumer) Consume(ctx context.Context, handler func(delivery amqp.Delivery) error) error {
 	messages, err := consumer.channel.Consume(
 		consumer.queue,
 		"",
@@ -88,7 +88,7 @@ func (consumer *Consumer) Consume(ctx context.Context, handler func(body []byte)
 					return
 				}
 
-				err = handler(delivery.Body)
+				err = handler(delivery)
 
 				if err != nil {
 					slog.Error("failed to handle message", "error", err)
@@ -103,12 +103,16 @@ func (consumer *Consumer) Consume(ctx context.Context, handler func(body []byte)
 	}()
 
 	slog.Info("consumer started", "queue", consumer.queue)
+
 	return nil
 }
 
 func (consumer *Consumer) Close() error {
-	if err := consumer.channel.Close(); err != nil {
+	err := consumer.channel.Close()
+
+	if err != nil {
 		return err
 	}
+
 	return consumer.connection.Close()
 }

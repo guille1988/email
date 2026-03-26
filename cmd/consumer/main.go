@@ -6,13 +6,13 @@ import (
 )
 
 func main() {
-	worker, err := bootstrap.NewWorker()
+	consumer, err := bootstrap.NewConsumer()
 
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	err = bootstrap.RunWorker(worker)
+	err = bootstrap.RunConsumer(consumer)
 
 	if err != nil {
 		logger.Fatal(err)
