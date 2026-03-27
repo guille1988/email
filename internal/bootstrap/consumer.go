@@ -24,7 +24,8 @@ func NewConsumer() (*app.App, error) {
 		return nil, err
 	}
 
-	err = logger.New(cfg.Log)
+	err = logger.New(cfg.Log, cfg.App.Name)
+
 	if err != nil {
 		return nil, err
 	}

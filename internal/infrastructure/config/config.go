@@ -31,6 +31,7 @@ type RabbitMQConfig struct {
 
 // AppConfig represents the application configuration.
 type AppConfig struct {
+	Name string
 	Env  Env
 	Host string
 	Port string
@@ -104,6 +105,7 @@ func New() (*Config, error) {
 
 	config := Config{
 		App: AppConfig{
+			Name: env.GetEnvAsString("APP_NAME", "email"),
 			Env:  Env(env.GetEnvAsString("APP_ENV", string(LocalEnv))),
 			Host: env.GetEnvAsString("APP_HOST", "localhost"),
 			Port: env.GetEnvAsString("APP_PORT", "8082"),
