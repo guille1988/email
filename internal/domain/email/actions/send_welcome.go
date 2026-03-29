@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"html/template"
 	"log/slog"
+	"os"
 	"path/filepath"
 
 	"github.com/go-mail/mail/v2"
@@ -37,6 +38,10 @@ func (action *SendWelcome) Execute(to, name string) error {
 	}
 
 	templatePath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
+	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
+		// Fallback for tests running from email/tests/integration/emails
+		templatePath = filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
+	}
 	tmpl, err := template.ParseFiles(templatePath)
 
 	if err != nil {

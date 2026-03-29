@@ -8,6 +8,7 @@ type Repository interface {
 	Create(email *Email) error
 	Update(email *Email) error
 	UpdateStatus(id uint, status EmailStatus) error
+	FindByTo(to string) (*Email, error)
 }
 
 type repository struct {
@@ -31,4 +32,10 @@ func (repository *repository) UpdateStatus(id uint, status EmailStatus) error {
 		Where("id = ?", id).
 		Update("status", status).
 		Error
+}
+
+func (repository *repository) FindByTo(to string) (*Email, error) {
+	var email Email
+	result := repository.db.Where("`to` = ?", to).First(&email)
+	return &email, result.Error
 }
