@@ -88,12 +88,18 @@ func RunConsumer(appInstance *app.App) error {
 	}
 
 	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
-		listener, ok := provider.GetListener(delivery.RoutingKey)
+		listener, listenerOk := provider.GetListener(delivery.RoutingKey)
+		event, eventOk := provider.GetEvent(delivery.RoutingKey)
 
-		if !ok {
+		if !(listenerOk && eventOk) {
 			slog.Warn("no listener registered for routing key", "routing_key", delivery.RoutingKey)
 			return nil
 		}
+
+		slog.Info("message received from rabbitmq",
+			"exchange", event.Exchange(),
+			"routing_key", delivery.RoutingKey,
+		)
 
 		return listener.Handle(delivery)
 	})
