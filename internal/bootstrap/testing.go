@@ -24,12 +24,6 @@ func NewTestingApp(cfg *config.Config) (*app.App, error) {
 		return nil, err
 	}
 
-	err = ctr.InitConsumer(cfg.RabbitMQ, "email.service")
-
-	if err != nil {
-		return nil, err
-	}
-
 	appInstance := &app.App{
 		Config:    cfg,
 		Container: ctr,
@@ -40,12 +34,6 @@ func NewTestingApp(cfg *config.Config) (*app.App, error) {
 			db, _ := ctr.DefaultConnection.DB()
 			if db != nil {
 				return db.Close()
-			}
-			return nil
-		},
-		func() error {
-			if ctr.Consumer != nil {
-				return ctr.Consumer.Close()
 			}
 			return nil
 		},

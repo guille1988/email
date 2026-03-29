@@ -13,8 +13,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-
-	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 // NewConsumer initializes the app instance with all necessary configuration.
@@ -37,12 +35,6 @@ func NewConsumer() (*app.App, error) {
 		return nil, err
 	}
 
-	err = ctr.InitConsumer(cfg.RabbitMQ, "email.service")
-
-	if err != nil {
-		return nil, err
-	}
-
 	appInstance := &app.App{
 		Config:    cfg,
 		Container: ctr,
@@ -53,12 +45,6 @@ func NewConsumer() (*app.App, error) {
 			db, _ := ctr.DefaultConnection.DB()
 			return db.Close()
 		},
-		func() error {
-			if ctr.Consumer != nil {
-				return ctr.Consumer.Close()
-			}
-			return nil
-		},
 	)
 
 	return appInstance, nil
@@ -68,26 +54,21 @@ func NewConsumer() (*app.App, error) {
 func RunConsumer(appInstance *app.App) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	defer appInstance.CloseAll()
 
 	emailRepo := model.NewRepository(appInstance.Container.DefaultConnection)
 	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepo)
 
-	provider := messaging.NewRabbitMQRegister(appInstance.Container.Consumer, sendWelcomeAction)
+	provider := messaging.NewRabbitMQRegister(appInstance.Config.RabbitMQ, sendWelcomeAction)
+	defer func(provider *messaging.RabbitMQRegister) {
+		err := provider.Close()
 
-	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
-		handler, ok := provider.GetHandler(delivery.RoutingKey)
-
-		if !ok {
-			slog.Warn("no handler registered for routing key", "routing_key", delivery.RoutingKey)
-			return nil
+		if err != nil {
+			panic(err)
 		}
+	}(provider)
 
-		slog.Info("message received from rabbitmq",
-			"routing_key", delivery.RoutingKey,
-		)
-
-		return handler.Handle(delivery.Body)
-	})
+	err := provider.RegisterAll(ctx)
 
 	if err != nil {
 		return err
@@ -95,11 +76,10 @@ func RunConsumer(appInstance *app.App) error {
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(stop)
 
 	slog.Info("consumer is running and waiting for messages...")
 	<-stop
-
-	appInstance.CloseAll()
 	slog.Info("consumer stopped safely")
 
 	return nil

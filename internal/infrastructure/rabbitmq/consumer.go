@@ -16,10 +16,9 @@ type MessageHandler interface {
 type Consumer struct {
 	connection *amqp.Connection
 	channel    *amqp.Channel
-	queue      string
 }
 
-func NewConsumer(cfg config.RabbitMQConfig, queue string) (*Consumer, error) {
+func NewConsumer(cfg config.RabbitMQConfig) (*Consumer, error) {
 	url := fmt.Sprintf("amqp://%s:%s@%s:%s/", cfg.User, cfg.Password, cfg.Host, cfg.Port)
 
 	connection, err := amqp.Dial(url)
@@ -46,28 +45,15 @@ func NewConsumer(cfg config.RabbitMQConfig, queue string) (*Consumer, error) {
 		return nil, fmt.Errorf("failed to open a channel: %w", err)
 	}
 
-	_, err = channel.QueueDeclare(
-		queue,
-		true,
-		false,
-		false,
-		false,
-		nil,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to declare a queue: %w", err)
-	}
-
 	ok = true
 
 	return &Consumer{
 		connection: connection,
 		channel:    channel,
-		queue:      queue,
 	}, nil
 }
 
-func (consumer *Consumer) Bind(exchange, routingKey string) error {
+func (consumer *Consumer) Bind(queue, exchange, routingKey string) error {
 	err := consumer.channel.ExchangeDeclare(
 		exchange,
 		"topic",
@@ -82,8 +68,20 @@ func (consumer *Consumer) Bind(exchange, routingKey string) error {
 		return err
 	}
 
+	_, err = consumer.channel.QueueDeclare(
+		queue,
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to declare a queue: %w", err)
+	}
+
 	return consumer.channel.QueueBind(
-		consumer.queue,
+		queue,
 		routingKey,
 		exchange,
 		false,
@@ -91,9 +89,9 @@ func (consumer *Consumer) Bind(exchange, routingKey string) error {
 	)
 }
 
-func (consumer *Consumer) Consume(ctx context.Context, handler func(delivery amqp.Delivery) error) error {
+func (consumer *Consumer) Consume(ctx context.Context, queue string, handler func(delivery amqp.Delivery) error) error {
 	messages, err := consumer.channel.Consume(
-		consumer.queue,
+		queue,
 		"",
 		false,
 		false,
@@ -130,7 +128,7 @@ func (consumer *Consumer) Consume(ctx context.Context, handler func(delivery amq
 		}
 	}()
 
-	slog.Info("consumer started", "queue", consumer.queue)
+	slog.Info("consumer started", "queue", queue)
 
 	return nil
 }
