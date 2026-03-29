@@ -64,6 +64,20 @@ func NewConsumer(cfg config.RabbitMQConfig, queue string) (*Consumer, error) {
 }
 
 func (consumer *Consumer) Bind(exchange, routingKey string) error {
+	err := consumer.channel.ExchangeDeclare(
+		exchange,
+		"topic",
+		true,
+		false,
+		false,
+		false,
+		nil,
+	)
+
+	if err != nil {
+		return err
+	}
+
 	return consumer.channel.QueueBind(
 		consumer.queue,
 		routingKey,

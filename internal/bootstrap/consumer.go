@@ -79,7 +79,8 @@ func RunConsumer(appInstance *app.App) error {
 	)
 
 	for _, routingKey := range provider.GetRegisteredRoutingKeys() {
-		err := appInstance.Container.Consumer.Bind("", routingKey)
+		event, _ := provider.GetEvent(routingKey)
+		err := appInstance.Container.Consumer.Bind(event.Exchange(), routingKey)
 
 		if err != nil {
 			return err
