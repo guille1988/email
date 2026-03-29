@@ -8,7 +8,6 @@ type Repository interface {
 	Create(email *Email) error
 	Update(email *Email) error
 	UpdateStatus(id uint, status EmailStatus) error
-	FindAll() ([]Email, error)
 }
 
 type repository struct {
@@ -32,11 +31,4 @@ func (repository *repository) UpdateStatus(id uint, status EmailStatus) error {
 		Where("id = ?", id).
 		Update("status", status).
 		Error
-}
-
-func (repository *repository) FindAll() ([]Email, error) {
-	var emails []Email
-	err := repository.db.Find(&emails).Error
-
-	return emails, err
 }
