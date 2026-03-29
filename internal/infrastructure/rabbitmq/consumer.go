@@ -9,6 +9,10 @@ import (
 	amqp "github.com/rabbitmq/amqp091-go"
 )
 
+type MessageHandler interface {
+	Handle(body []byte) error
+}
+
 type Consumer struct {
 	connection *amqp.Connection
 	channel    *amqp.Channel

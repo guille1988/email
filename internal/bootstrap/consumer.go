@@ -2,13 +2,11 @@ package bootstrap
 
 import (
 	"context"
-	"email/internal/domain/email/listeners"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
-	"email/internal/infrastructure/providers"
-	"email/internal/shared/events"
+	"email/internal/infrastructure/providers/messaging"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -69,39 +67,21 @@ func RunConsumer(appInstance *app.App) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	provider := providers.NewEventProvider()
-
-	provider.Register(
-		&events.UserRegistered{},
-		&listeners.WelcomeEmail{
-			Action: appInstance.Container.SendWelcomeAction,
-		},
-	)
-
-	for _, routingKey := range provider.GetRegisteredRoutingKeys() {
-		event, _ := provider.GetEvent(routingKey)
-		err := appInstance.Container.Consumer.Bind(event.Exchange(), routingKey)
-
-		if err != nil {
-			return err
-		}
-	}
+	provider := messaging.NewRabbitMQRegister(appInstance.Container.Consumer, appInstance.Container.SendWelcomeAction)
 
 	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
-		listener, listenerOk := provider.GetListener(delivery.RoutingKey)
-		event, eventOk := provider.GetEvent(delivery.RoutingKey)
+		handler, ok := provider.GetHandler(delivery.RoutingKey)
 
-		if !(listenerOk && eventOk) {
-			slog.Warn("no listener registered for routing key", "routing_key", delivery.RoutingKey)
+		if !ok {
+			slog.Warn("no handler registered for routing key", "routing_key", delivery.RoutingKey)
 			return nil
 		}
 
 		slog.Info("message received from rabbitmq",
-			"exchange", event.Exchange(),
 			"routing_key", delivery.RoutingKey,
 		)
 
-		return listener.Handle(delivery)
+		return handler.Handle(delivery.Body)
 	})
 
 	if err != nil {

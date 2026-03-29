@@ -2,9 +2,9 @@ package actions
 
 import (
 	"bytes"
-	"email/internal/domain/email/data"
 	"email/internal/domain/email/model"
 	"email/internal/infrastructure/config"
+	"email/internal/shared/messaging/rabbitmq/dtos"
 	"fmt"
 	"html/template"
 	"log/slog"
@@ -45,7 +45,7 @@ func (action *SendWelcome) Execute(to, name string) error {
 	}
 
 	var body bytes.Buffer
-	dataWelcome := data.WelcomeEmail{
+	dataWelcome := dtos.WelcomeEmail{
 		Name:  name,
 		Email: to,
 	}
