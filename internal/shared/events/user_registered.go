@@ -7,8 +7,19 @@ type UserRegistered struct {
 	Name  string `json:"name"`
 }
 
+func NewUserRegistered(email, name string) *UserRegistered {
+	return &UserRegistered{
+		Email: email,
+		Name:  name,
+	}
+}
+
 func (event *UserRegistered) RoutingKey() string {
 	return "user.registered"
+}
+
+func (event *UserRegistered) ToJson() ([]byte, error) {
+	return json.Marshal(event)
 }
 
 func (event *UserRegistered) FromJson(data []byte) error {

@@ -2,13 +2,13 @@ package bootstrap
 
 import (
 	"context"
-	"email/internal/domain/email/events"
 	"email/internal/domain/email/listeners"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
 	"email/internal/infrastructure/providers"
+	"email/internal/shared/events"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -77,6 +77,14 @@ func RunConsumer(appInstance *app.App) error {
 			Action: appInstance.Container.SendWelcomeAction,
 		},
 	)
+
+	for _, routingKey := range provider.GetRegisteredRoutingKeys() {
+		err := appInstance.Container.Consumer.Bind("", routingKey)
+
+		if err != nil {
+			return err
+		}
+	}
 
 	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
 		listener, ok := provider.GetListener(delivery.RoutingKey)

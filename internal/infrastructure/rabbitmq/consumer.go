@@ -63,6 +63,16 @@ func NewConsumer(cfg config.RabbitMQConfig, queue string) (*Consumer, error) {
 	}, nil
 }
 
+func (consumer *Consumer) Bind(exchange, routingKey string) error {
+	return consumer.channel.QueueBind(
+		consumer.queue,
+		routingKey,
+		exchange,
+		false,
+		nil,
+	)
+}
+
 func (consumer *Consumer) Consume(ctx context.Context, handler func(delivery amqp.Delivery) error) error {
 	messages, err := consumer.channel.Consume(
 		consumer.queue,

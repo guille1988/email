@@ -1,8 +1,8 @@
 package providers
 
 import (
-	"email/internal/domain/email/events"
 	"email/internal/infrastructure/rabbitmq"
+	"email/internal/shared/events"
 )
 
 type EventProvider struct {
@@ -22,4 +22,14 @@ func (provider *EventProvider) Register(event events.Event, listener rabbitmq.Ev
 func (provider *EventProvider) GetListener(routingKey string) (rabbitmq.EventListener, bool) {
 	l, ok := provider.listeners[routingKey]
 	return l, ok
+}
+
+func (provider *EventProvider) GetRegisteredRoutingKeys() []string {
+	keys := make([]string, 0, len(provider.listeners))
+
+	for routingKey := range provider.listeners {
+		keys = append(keys, routingKey)
+	}
+
+	return keys
 }

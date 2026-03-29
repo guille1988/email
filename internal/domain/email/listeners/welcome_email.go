@@ -2,7 +2,7 @@ package listeners
 
 import (
 	"email/internal/domain/email/actions"
-	"email/internal/domain/email/events"
+	"email/internal/shared/events"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
