@@ -1,8 +1,6 @@
 package container
 
 import (
-	"email/internal/domain/email/actions"
-	"email/internal/domain/email/model"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/database"
 	"email/internal/infrastructure/rabbitmq"
@@ -12,10 +10,7 @@ import (
 
 type Container struct {
 	DefaultConnection *gorm.DB
-	EmailRepository   model.Repository
-	SendWelcomeAction *actions.SendWelcome
 	Consumer          *rabbitmq.Consumer
-	Config            *config.Config
 }
 
 // New creates a new container with initialized database connections.
@@ -26,20 +21,14 @@ func New(cfg *config.Config) (*Container, error) {
 		return nil, err
 	}
 
-	emailRepo := model.NewRepository(defaultConnection)
-	sendWelcomeAction := actions.NewSendWelcome(cfg.Mail, emailRepo)
-
 	return &Container{
 		DefaultConnection: defaultConnection,
-		EmailRepository:   emailRepo,
-		SendWelcomeAction: sendWelcomeAction,
-		Config:            cfg,
 	}, nil
 }
 
 // InitConsumer initializes the RabbitMQ consumer.
-func (container *Container) InitConsumer(queue string) error {
-	consumer, err := rabbitmq.NewConsumer(container.Config.RabbitMQ, queue)
+func (container *Container) InitConsumer(cfg config.RabbitMQConfig, queue string) error {
+	consumer, err := rabbitmq.NewConsumer(cfg, queue)
 
 	if err != nil {
 		return err

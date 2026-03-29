@@ -24,7 +24,7 @@ func NewTestingApp(cfg *config.Config) (*app.App, error) {
 		return nil, err
 	}
 
-	err = ctr.InitConsumer("email.service")
+	err = ctr.InitConsumer(cfg.RabbitMQ, "email.service")
 
 	if err != nil {
 		return nil, err

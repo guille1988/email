@@ -2,6 +2,8 @@ package bootstrap
 
 import (
 	"context"
+	"email/internal/domain/email/actions"
+	"email/internal/domain/email/model"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
@@ -35,7 +37,7 @@ func NewConsumer() (*app.App, error) {
 		return nil, err
 	}
 
-	err = ctr.InitConsumer("email.service")
+	err = ctr.InitConsumer(cfg.RabbitMQ, "email.service")
 
 	if err != nil {
 		return nil, err
@@ -67,7 +69,10 @@ func RunConsumer(appInstance *app.App) error {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	provider := messaging.NewRabbitMQRegister(appInstance.Container.Consumer, appInstance.Container.SendWelcomeAction)
+	emailRepo := model.NewRepository(appInstance.Container.DefaultConnection)
+	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepo)
+
+	provider := messaging.NewRabbitMQRegister(appInstance.Container.Consumer, sendWelcomeAction)
 
 	err := appInstance.Container.Consumer.Consume(ctx, func(delivery amqp.Delivery) error {
 		handler, ok := provider.GetHandler(delivery.RoutingKey)

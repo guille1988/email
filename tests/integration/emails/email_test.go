@@ -1,6 +1,7 @@
 package emails
 
 import (
+	"email/internal/domain/email/actions"
 	"email/internal/domain/email/handlers"
 	"email/internal/domain/email/model"
 	"email/internal/shared/messaging/rabbitmq/dtos"
@@ -20,12 +21,13 @@ func TestEmailModule(test *testing.T) {
 		to := fmt.Sprintf("test-%d@example.com", time.Now().UnixNano())
 		name := "Test User"
 
-		handler := handlers.NewWelcomeEmail(integration.TestApp.Container.SendWelcomeAction)
+		emailRepo := model.NewRepository(integration.TestApp.Container.DefaultConnection)
+		sendWelcomeAction := actions.NewSendWelcome(integration.TestConfig.Mail, emailRepo)
+		handler := handlers.NewWelcomeEmail(sendWelcomeAction)
 		body, _ := json.Marshal(dtos.WelcomeEmail{Email: to, Name: name})
 		err := handler.Handle(body)
 		assert.NoError(test, err)
 
-		emailRepo := model.NewRepository(integration.TestApp.Container.DefaultConnection)
 		emailRecord, err := emailRepo.FindByTo(to)
 		assert.NoError(test, err)
 		assert.Equal(test, model.Sent, emailRecord.Status)
