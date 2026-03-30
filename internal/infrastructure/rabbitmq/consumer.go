@@ -53,10 +53,10 @@ func NewConsumer(cfg config.RabbitMQConfig) (*Consumer, error) {
 	}, nil
 }
 
-func (consumer *Consumer) Bind(queue, exchange, routingKey string) error {
+func (consumer *Consumer) Bind(queue, exchange, exchangeType, routingKey string) error {
 	err := consumer.channel.ExchangeDeclare(
 		exchange,
-		"topic",
+		exchangeType,
 		true,
 		false,
 		false,

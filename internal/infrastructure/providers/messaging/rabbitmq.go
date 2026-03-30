@@ -2,8 +2,6 @@ package messaging
 
 import (
 	"context"
-	"email/internal/domain/email/actions"
-	"email/internal/domain/email/handlers"
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/rabbitmq"
 	"log/slog"
@@ -17,33 +15,47 @@ type queueEntry struct {
 }
 
 type RabbitMQRegister struct {
-	cfg               config.RabbitMQConfig
-	queues            map[string]*queueEntry
-	sendWelcomeAction *actions.SendWelcome
+	cfg    config.RabbitMQConfig
+	queues map[string]*queueEntry
 }
 
-func NewRabbitMQRegister(cfg config.RabbitMQConfig, sendWelcomeAction *actions.SendWelcome) *RabbitMQRegister {
+func NewRabbitMQRegister(cfg config.RabbitMQConfig) *RabbitMQRegister {
 	return &RabbitMQRegister{
-		cfg:               cfg,
-		queues:            make(map[string]*queueEntry),
-		sendWelcomeAction: sendWelcomeAction,
+		cfg:    cfg,
+		queues: make(map[string]*queueEntry),
 	}
 }
 
-func (provider *RabbitMQRegister) RegisterAll(ctx context.Context) error {
-	err := provider.register(
-		"email.service",
-		"auth.events",
-		"user.created",
-		handlers.NewWelcomeEmail(provider.sendWelcomeAction),
-	)
+func (provider *RabbitMQRegister) Register(queue, exchange, exchangeType, routingKey string, handler rabbitmq.MessageHandler) error {
+	entry, ok := provider.queues[queue]
 
-	if err != nil {
+	if !ok {
+		consumer, err := rabbitmq.NewConsumer(provider.cfg)
+
+		if err != nil {
+			return err
+		}
+
+		entry = &queueEntry{
+			consumer: consumer,
+			handlers: make(map[string]rabbitmq.MessageHandler),
+		}
+
+		provider.queues[queue] = entry
+	}
+
+	if err := entry.consumer.Bind(queue, exchange, exchangeType, routingKey); err != nil {
 		return err
 	}
 
+	entry.handlers[routingKey] = handler
+
+	return nil
+}
+
+func (provider *RabbitMQRegister) StartAll(ctx context.Context) error {
 	for queueName, entry := range provider.queues {
-		err = entry.consumer.Consume(ctx, queueName, func(delivery amqp.Delivery) error {
+		err := entry.consumer.Consume(ctx, queueName, func(delivery amqp.Delivery) error {
 			handler, ok := entry.handlers[delivery.RoutingKey]
 
 			if !ok {
@@ -79,31 +91,5 @@ func (provider *RabbitMQRegister) Close() error {
 			return err
 		}
 	}
-	return nil
-}
-
-func (provider *RabbitMQRegister) register(queue, exchange, routingKey string, handler rabbitmq.MessageHandler) error {
-	entry, ok := provider.queues[queue]
-
-	if !ok {
-		consumer, err := rabbitmq.NewConsumer(provider.cfg)
-		if err != nil {
-			return err
-		}
-		entry = &queueEntry{
-			consumer: consumer,
-			handlers: make(map[string]rabbitmq.MessageHandler),
-		}
-		provider.queues[queue] = entry
-	}
-
-	err := entry.consumer.Bind(queue, exchange, routingKey)
-
-	if err != nil {
-		return err
-	}
-
-	entry.handlers[routingKey] = handler
-
 	return nil
 }

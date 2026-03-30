@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"context"
 	"email/internal/domain/email/actions"
+	"email/internal/domain/email/handlers"
 	"email/internal/domain/email/model"
 	"email/internal/infrastructure/app"
 	"email/internal/infrastructure/config"
@@ -59,16 +60,26 @@ func RunConsumer(appInstance *app.App) error {
 	emailRepo := model.NewRepository(appInstance.Container.DefaultConnection)
 	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepo)
 
-	provider := messaging.NewRabbitMQRegister(appInstance.Config.RabbitMQ, sendWelcomeAction)
-	defer func(provider *messaging.RabbitMQRegister) {
-		err := provider.Close()
-
-		if err != nil {
-			panic(err)
+	provider := messaging.NewRabbitMQRegister(appInstance.Config.RabbitMQ)
+	defer func() {
+		if err := provider.Close(); err != nil {
+			slog.Error("failed to close rabbitmq provider", "error", err)
 		}
-	}(provider)
+	}()
 
-	err := provider.RegisterAll(ctx)
+	err := provider.Register(
+		"email.service",
+		"auth.events",
+		"topic",
+		"user.created",
+		handlers.NewWelcomeEmail(sendWelcomeAction),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = provider.StartAll(ctx)
 
 	if err != nil {
 		return err
