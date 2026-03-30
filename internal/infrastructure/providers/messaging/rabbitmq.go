@@ -31,27 +31,41 @@ func NewRabbitMQRegister(cfg config.RabbitMQConfig, sendWelcomeAction *actions.S
 }
 
 func (provider *RabbitMQRegister) RegisterAll(ctx context.Context) error {
-	err := provider.register("email.service", "auth.events", "user.created", handlers.NewWelcomeEmail(provider.sendWelcomeAction))
+	err := provider.register(
+		"email.service",
+		"auth.events",
+		"user.created",
+		handlers.NewWelcomeEmail(provider.sendWelcomeAction),
+	)
 
 	if err != nil {
 		return err
 	}
 
 	for queueName, entry := range provider.queues {
-		name := queueName
-		e := entry
-		if err = e.consumer.Consume(ctx, name, func(delivery amqp.Delivery) error {
-			handler, ok := e.handlers[delivery.RoutingKey]
+		err = entry.consumer.Consume(ctx, queueName, func(delivery amqp.Delivery) error {
+			handler, ok := entry.handlers[delivery.RoutingKey]
 
 			if !ok {
-				slog.Warn("no handler registered for routing key", "routing_key", delivery.RoutingKey)
+				slog.Warn(
+					"no handler registered for routing key",
+					"routing_key",
+					delivery.RoutingKey,
+				)
+
 				return nil
 			}
 
-			slog.Info("message received from rabbitmq", "routing_key", delivery.RoutingKey)
+			slog.Info(
+				"message received from rabbitmq",
+				"routing_key",
+				delivery.RoutingKey,
+			)
 
 			return handler.Handle(delivery.Body)
-		}); err != nil {
+		})
+
+		if err != nil {
 			return err
 		}
 	}
