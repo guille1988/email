@@ -76,6 +76,52 @@ From the root `Makefile`, you can manage this service:
 
 ---
 
+### 📨 Messaging — Consuming a new message
+
+To consume a new message from RabbitMQ, follow these 4 steps without touching any messaging infrastructure files:
+
+**1. Create the DTO** in `internal/shared/messaging/rabbitmq/dtos/`:
+```go
+// internal/shared/messaging/rabbitmq/dtos/password_reset.go
+type PasswordReset struct {
+    Email string `json:"email"`
+    Token string `json:"token"`
+}
+```
+
+**2. Create the action** in `internal/domain/email/actions/`:
+```go
+// internal/domain/email/actions/send_password_reset.go
+func (a *SendPasswordReset) Execute(email, token string) error { ... }
+```
+
+**3. Create the handler** in `internal/domain/email/handlers/`:
+```go
+// internal/domain/email/handlers/password_reset.go
+func (h *PasswordReset) Handle(body []byte) error {
+    var dto dtos.PasswordReset
+    if err := json.Unmarshal(body, &dto); err != nil {
+        return fmt.Errorf("failed to unmarshal password reset dto: %w", err)
+    }
+    return h.action.Execute(dto.Email, dto.Token)
+}
+```
+
+**4. Register the handler** in `internal/bootstrap/consumer.go`:
+```go
+provider.Register(
+    "email.service",
+    "auth.events",
+    "topic",
+    "user.password_reset",
+    handlers.NewPasswordReset(passwordResetAction),
+)
+```
+
+No infrastructure files need to be modified.
+
+---
+
 ### 📂 Project Structure
 
 ```text
