@@ -24,14 +24,14 @@ func TestEmailModule(test *testing.T) {
 		emailRepo := model.NewRepository(integration.TestApp.Container.DefaultConnection)
 		sendWelcomeAction := actions.NewSendWelcome(integration.TestConfig.Mail, emailRepo)
 		handler := handlers.NewWelcomeEmail(sendWelcomeAction)
-		body, _ := json.Marshal(dtos.WelcomeEmail{Email: to, Name: name})
+		body, _ := json.Marshal(dtos.WelcomeEmail{Email: to, Name: name, VerificationURL: "http://localhost:3000/verify-email?token=test"})
 		err := handler.Handle(body)
 		assert.NoError(test, err)
 
 		emailRecord, err := emailRepo.FindByTo(to)
 		assert.NoError(test, err)
 		assert.Equal(test, model.Sent, emailRecord.Status)
-		assert.Equal(test, "Bienvenido a Go App", emailRecord.Subject)
+		assert.Equal(test, "Verify your email - Go App", emailRecord.Subject)
 
 		var resp *http.Response
 		resp, err = http.Get(fmt.Sprintf("http://%s:%d/api/v1/messages",

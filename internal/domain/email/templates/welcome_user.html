@@ -2,12 +2,16 @@
 <html lang="">
 <head>
     <meta charset="UTF-8">
-    <title>Welcome</title>
+    <title>Verify your email</title>
 </head>
 <body>
 <h1>Hello, {{.Name}}!</h1>
-<p>We are happy that you have registered in our application.</p>
-<p>Your registered email is: {{.Email}}</p>
+<p>Thank you for registering in our application. Please verify your email address to get started.</p>
+<p>
+    <a href="{{.VerificationURL}}">Verify Email</a>
+</p>
+<p>This link will expire in 60 minutes.</p>
+<p>If you did not create an account, you can safely ignore this email.</p>
 <p>Best regards,<br>The Go App Team</p>
 </body>
 </html>

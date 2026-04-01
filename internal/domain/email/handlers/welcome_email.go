@@ -25,5 +25,5 @@ func (handler *WelcomeEmail) Handle(body []byte) error {
 		return fmt.Errorf("failed to unmarshal welcome email dto: %w", err)
 	}
 
-	return handler.action.Execute(dto.Email, dto.Name)
+	return handler.action.Execute(dto.Email, dto.Name, dto.VerificationURL)
 }

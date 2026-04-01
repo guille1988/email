@@ -26,10 +26,10 @@ func NewSendWelcome(cfg config.MailConfig, emailRepository model.Repository) *Se
 	}
 }
 
-func (action *SendWelcome) Execute(to, name string) error {
+func (action *SendWelcome) Execute(to, name, verificationURL string) error {
 	emailRecord := &model.Email{
 		To:      to,
-		Subject: "Bienvenido a Go App",
+		Subject: "Verify your email - Go App",
 		Status:  model.Pending,
 	}
 
@@ -38,11 +38,14 @@ func (action *SendWelcome) Execute(to, name string) error {
 	}
 
 	templatePath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
-	if _, err := os.Stat(templatePath); os.IsNotExist(err) {
-		// Fallback for tests running from email/tests/integration/emails
+	_, err := os.Stat(templatePath)
+
+	// Fallback for tests running from email/tests/integration/emails
+	if os.IsNotExist(err) {
 		templatePath = filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
 	}
-	tmpl, err := template.ParseFiles(templatePath)
+	var tmpl *template.Template
+	tmpl, err = template.ParseFiles(templatePath)
 
 	if err != nil {
 		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)
@@ -51,8 +54,9 @@ func (action *SendWelcome) Execute(to, name string) error {
 
 	var body bytes.Buffer
 	dataWelcome := dtos.WelcomeEmail{
-		Name:  name,
-		Email: to,
+		Name:            name,
+		Email:           to,
+		VerificationURL: verificationURL,
 	}
 
 	err = tmpl.Execute(&body, dataWelcome)
@@ -65,7 +69,7 @@ func (action *SendWelcome) Execute(to, name string) error {
 	message := mail.NewMessage()
 	message.SetHeader("From", "no-reply@go-app.com")
 	message.SetHeader("To", to)
-	message.SetHeader("Subject", "Bienvenido a Go App")
+	message.SetHeader("Subject", "Verify your email - Go App")
 	message.SetBody("text/html", body.String())
 
 	err = action.dialer.DialAndSend(message)
