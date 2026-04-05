@@ -5,6 +5,11 @@ import (
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/container"
 	"email/internal/infrastructure/logger"
+	"email/internal/infrastructure/middlewares"
+	"email/internal/infrastructure/providers"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
 // NewTestingApp initializes the app optimized for tests.
@@ -40,4 +45,15 @@ func NewTestingApp(cfg *config.Config) (*app.App, error) {
 	)
 
 	return appInstance, nil
+}
+
+// NewTestingHandler returns the Gin engine without an HTTP server.
+func NewTestingHandler(appInstance *app.App) http.Handler {
+	gin.SetMode(gin.TestMode)
+	engine := gin.New()
+
+	middlewares.RegisterMiddlewares(engine)
+	providers.RegisterRoutes(engine, appInstance)
+
+	return engine
 }

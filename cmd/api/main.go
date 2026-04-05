@@ -6,13 +6,13 @@ import (
 )
 
 func main() {
-	seeder, err := bootstrap.NewSeeder()
+	api, err := bootstrap.NewApi()
 
 	if err != nil {
 		logger.Fatal(err)
 	}
 
-	err = bootstrap.RunSeeder(seeder)
+	err = bootstrap.Run(api)
 
 	if err != nil {
 		logger.Fatal(err)

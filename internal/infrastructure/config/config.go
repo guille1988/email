@@ -33,6 +33,8 @@ type RabbitMQConfig struct {
 type AppConfig struct {
 	Name string
 	Env  Env
+	Host string
+	Port string
 }
 
 type ConnectionName string
@@ -105,6 +107,8 @@ func New() (*Config, error) {
 		App: AppConfig{
 			Name: env.GetEnvAsString("APP_NAME", "email"),
 			Env:  Env(env.GetEnvAsString("APP_ENV", string(LocalEnv))),
+			Host: env.GetEnvAsString("APP_HOST", "0.0.0.0"),
+			Port: env.GetEnvAsString("APP_PORT", "8081"),
 		},
 		Database: DatabaseConfig{
 			Connections: map[ConnectionName]DatabaseConnection{

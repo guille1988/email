@@ -7,6 +7,8 @@ import (
 	"email/internal/infrastructure/config"
 	"email/internal/infrastructure/database"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
@@ -19,6 +21,7 @@ import (
 )
 
 var TestApp *app.App
+var TestHandler http.Handler
 var TestConfig *config.Config
 var MailpitApiPort int
 
@@ -145,6 +148,7 @@ func setupApplication(cfg *config.Config) {
 	}
 
 	TestApp = appInstance
+	TestHandler = bootstrap.NewTestingHandler(appInstance)
 }
 
 // RefreshDatabase resets the database to a clean state.
@@ -166,6 +170,14 @@ func RefreshDatabase() {
 	if err != nil {
 		panic(err)
 	}
+}
+
+// ExecuteRequest performs an HTTP request against the global test handler and returns the response recorder.
+func ExecuteRequest(request *http.Request) *httptest.ResponseRecorder {
+	recorder := httptest.NewRecorder()
+	TestHandler.ServeHTTP(recorder, request)
+
+	return recorder
 }
 
 // TestCase is a wrapper that runs RefreshDatabase before executing the actual test logic.
