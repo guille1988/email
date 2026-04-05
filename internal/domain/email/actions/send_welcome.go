@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"email/internal/domain/email/model"
 	"email/internal/infrastructure/config"
-	"email/internal/shared/messaging/rabbitmq/dtos"
 	"fmt"
 	"html/template"
 	"log/slog"
 	"os"
 	"path/filepath"
+
+	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
 
 	"github.com/go-mail/mail/v2"
 )

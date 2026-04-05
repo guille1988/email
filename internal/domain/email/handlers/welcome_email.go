@@ -2,9 +2,10 @@ package handlers
 
 import (
 	"email/internal/domain/email/actions"
-	"email/internal/shared/messaging/rabbitmq/dtos"
 	"encoding/json"
 	"fmt"
+
+	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
 )
 
 type WelcomeEmail struct {

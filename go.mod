@@ -2,6 +2,10 @@ module email
 
 go 1.25.0
 
+require github.com/guille1988/go-app-shared v0.0.0
+
+replace github.com/guille1988/go-app-shared => ./internal/shared
+
 require (
 	github.com/docker/go-connections v0.6.0
 	github.com/go-mail/mail/v2 v2.3.0

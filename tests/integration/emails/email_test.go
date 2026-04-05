@@ -4,7 +4,6 @@ import (
 	"email/internal/domain/email/actions"
 	"email/internal/domain/email/handlers"
 	"email/internal/domain/email/model"
-	"email/internal/shared/messaging/rabbitmq/dtos"
 	"email/tests/integration"
 	"encoding/json"
 	"fmt"
@@ -12,6 +11,8 @@ import (
 	"net/http"
 	"testing"
 	"time"
+
+	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
 
 	"github.com/stretchr/testify/assert"
 )
