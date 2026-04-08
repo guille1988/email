@@ -33,6 +33,7 @@ func TestEmailModule(test *testing.T) {
 		assert.NoError(test, err)
 		assert.Equal(test, model.Sent, emailRecord.Status)
 		assert.Equal(test, "Verify your email - Go App", emailRecord.Subject)
+		assert.Equal(test, model.WelcomeEmail, emailRecord.Type)
 
 		var resp *http.Response
 		resp, err = http.Get(fmt.Sprintf("http://%s:%d/api/v1/messages",

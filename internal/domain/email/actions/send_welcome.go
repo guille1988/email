@@ -32,6 +32,7 @@ func (action *SendWelcome) Execute(to, name, verificationURL string) error {
 		To:      to,
 		Subject: "Verify your email - Go App",
 		Status:  model.Pending,
+		Type:    model.WelcomeEmail,
 	}
 
 	if err := action.emailRepository.Create(emailRecord); err != nil {

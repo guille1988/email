@@ -13,12 +13,19 @@ const (
 	Failed  EmailStatus = "failed"
 )
 
+type EmailType string
+
+const (
+	WelcomeEmail EmailType = "welcome"
+)
+
 type Email struct {
 	ID        uint        `gorm:"primaryKey" json:"id"`
 	To        string      `gorm:"size:255;index;not null" json:"to"`
 	Subject   string      `gorm:"size:255;not null" json:"subject"`
 	Body      string      `gorm:"type:text;not null" json:"body"`
 	Status    EmailStatus `gorm:"size:50;default:'pending';index" json:"status"`
+	Type      EmailType   `gorm:"type:varchar(50);not null;index" json:"type"`
 	CreatedAt time.Time   `json:"created_at"`
 	UpdatedAt time.Time   `json:"updated_at"`
 }
