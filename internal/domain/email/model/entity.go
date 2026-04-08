@@ -17,6 +17,7 @@ type EmailType string
 
 const (
 	WelcomeEmail EmailType = "welcome"
+	StressEmail  EmailType = "stress"
 )
 
 type Email struct {

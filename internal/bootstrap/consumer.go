@@ -59,6 +59,7 @@ func RunConsumer(appInstance *app.App) error {
 
 	emailRepo := model.NewRepository(appInstance.Container.DefaultConnection)
 	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepo)
+	sendStressAction := actions.NewSendStress(appInstance.Config.Mail, emailRepo)
 
 	provider := messaging.NewRabbitMQRegister(appInstance.Config.RabbitMQ)
 	defer func() {
@@ -73,6 +74,18 @@ func RunConsumer(appInstance *app.App) error {
 		"topic",
 		"user.created",
 		handlers.NewWelcomeEmail(sendWelcomeAction),
+	)
+
+	if err != nil {
+		return err
+	}
+
+	err = provider.Register(
+		"email.service",
+		"auth.events",
+		"topic",
+		"stress.test",
+		handlers.NewStressEmail(sendStressAction),
 	)
 
 	if err != nil {

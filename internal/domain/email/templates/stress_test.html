@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stress Test — Go App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #00ff88;
+            padding: 40px;
+            position: relative;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: -4px;
+            bottom: -4px;
+            border: 1px solid #005533;
+            z-index: -1;
+        }
+        .badge {
+            display: inline-block;
+            background: #ff3333;
+            color: #fff;
+            padding: 3px 10px;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+        h1 {
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #ff3333;
+            margin-bottom: 8px;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid #00ff88;
+            margin: 24px 0;
+            opacity: 0.3;
+        }
+        .line {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .label {
+            color: #555;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .value {
+            color: #ffdd00;
+        }
+        .status-block {
+            background: #0d1f0d;
+            border-left: 3px solid #00ff88;
+            padding: 16px 20px;
+            margin: 24px 0;
+        }
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 13px;
+        }
+        .status-item:last-child { margin-bottom: 0; }
+        .ok { color: #00ff88; }
+        .footer {
+            margin-top: 32px;
+            font-size: 11px;
+            color: #333;
+            border-top: 1px solid #1a1a1a;
+            padding-top: 16px;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <span class="badge">stress test</span>
+    <h1>Pipeline Check</h1>
+
+    <hr class="divider">
+
+    <div class="line">
+        <span class="label">recipient</span><br>
+        <span class="value">{{.Name}}</span>
+    </div>
+    <div class="line">
+        <span class="label">address</span><br>
+        <span class="value">{{.Email}}</span>
+    </div>
+
+    <div class="status-block">
+        <div class="status-item"><span>HTTP endpoint</span><span class="ok">✓ OK</span></div>
+        <div class="status-item"><span>RabbitMQ publish</span><span class="ok">✓ OK</span></div>
+        <div class="status-item"><span>RabbitMQ consume</span><span class="ok">✓ OK</span></div>
+        <div class="status-item"><span>Template engine</span><span class="ok">✓ OK</span></div>
+        <div class="status-item"><span>SMTP relay</span><span class="ok">✓ OK</span></div>
+    </div>
+
+    <div class="line">
+        All systems operational. If you received this message the full
+        async pipeline from auth → broker → email service → SMTP is
+        working correctly.
+    </div>
+
+    <div class="footer">
+        Go App &mdash; Automated Stress Test &bull; No action required.
+    </div>
+</div>
+</body>
+</html>
