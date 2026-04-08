@@ -1,17 +1,132 @@
 <!DOCTYPE html>
-<html lang="">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Verify your email</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome — Go App</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background: #0a0a0a;
+            color: #00ff88;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            border: 1px solid #00ff88;
+            padding: 40px;
+            position: relative;
+        }
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            right: -4px;
+            bottom: -4px;
+            border: 1px solid #005533;
+            z-index: -1;
+        }
+        .badge {
+            display: inline-block;
+            background: #00ff88;
+            color: #0a0a0a;
+            padding: 3px 10px;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 28px;
+        }
+        h1 {
+            font-size: 26px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #00ff88;
+            margin-bottom: 8px;
+        }
+        .divider {
+            border: none;
+            border-top: 1px solid #00ff88;
+            margin: 24px 0;
+            opacity: 0.3;
+        }
+        .line {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+        .label {
+            color: #555;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .message-block {
+            background: #0d1f0d;
+            border-left: 3px solid #00ff88;
+            padding: 16px 20px;
+            margin: 24px 0;
+            line-height: 1.7;
+            font-size: 13px;
+        }
+        .cta {
+            display: inline-block;
+            margin-top: 24px;
+            padding: 12px 28px;
+            background: transparent;
+            border: 1px solid #00ff88;
+            color: #00ff88;
+            text-decoration: none;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .expiry {
+            margin-top: 16px;
+            font-size: 11px;
+            color: #555;
+            letter-spacing: 1px;
+        }
+        .footer {
+            margin-top: 32px;
+            font-size: 11px;
+            color: #333;
+            border-top: 1px solid #1a1a1a;
+            padding-top: 16px;
+            letter-spacing: 1px;
+        }
+    </style>
 </head>
 <body>
-<h1>Hello, {{.Name}}!</h1>
-<p>Thank you for registering in our application. Please verify your email address to get started.</p>
-<p>
-    <a href="{{.VerificationURL}}">Verify Email</a>
-</p>
-<p>This link will expire in 60 minutes.</p>
-<p>If you did not create an account, you can safely ignore this email.</p>
-<p>Best regards,<br>The Go App Team</p>
+<div class="container">
+    <span class="badge">welcome</span>
+    <h1>Hello, {{.Name}}!</h1>
+
+    <hr class="divider">
+
+    <div class="message-block">
+        Thank you for registering. One last step — verify your email address
+        to activate your account and get started.
+    </div>
+
+    <a href="{{.VerificationURL}}" class="cta">Verify Email</a>
+
+    <p class="expiry">&#x23F1; This link expires in 60 minutes.</p>
+
+    <hr class="divider">
+
+    <div class="line">
+        <span class="label">note</span><br>
+        <span style="font-size: 12px; color: #444;">
+            If you did not create an account, you can safely ignore this email.
+        </span>
+    </div>
+
+    <div class="footer">
+        Go App &mdash; Account Verification &bull; No action required if you did not sign up.
+    </div>
+</div>
 </body>
 </html>
