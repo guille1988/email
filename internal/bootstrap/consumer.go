@@ -11,9 +11,12 @@ import (
 	"email/internal/infrastructure/logger"
 	"email/internal/infrastructure/providers/messaging"
 	"log/slog"
+
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/guille1988/go-app-shared/messaging/rabbitmq/constants"
 )
 
 // NewConsumer initializes the app instance with all necessary configuration.
@@ -70,9 +73,9 @@ func RunConsumer(appInstance *app.App) error {
 
 	err := provider.Register(
 		"email.service",
-		"auth.events",
-		"topic",
-		"user.created",
+		constants.ExchangeAuthEvents,
+		constants.ExchangeTypeTopic,
+		constants.RouteUserCreated,
 		handlers.NewWelcomeEmail(sendWelcomeAction),
 	)
 
@@ -82,9 +85,9 @@ func RunConsumer(appInstance *app.App) error {
 
 	err = provider.Register(
 		"email.service",
-		"auth.events",
-		"topic",
-		"stress.test",
+		constants.ExchangeAuthEvents,
+		constants.ExchangeTypeTopic,
+		constants.RouteStressTest,
 		handlers.NewStressEmail(sendStressAction),
 	)
 
