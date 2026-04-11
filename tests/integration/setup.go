@@ -12,11 +12,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/docker/go-connections/nat"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/mysql"
-	"github.com/testcontainers/testcontainers-go/modules/rabbitmq"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -33,7 +31,6 @@ func RunTests(test *testing.M) {
 
 	TestConfig = setupConfig()
 	mysqlInstance := setupDatabaseContainer(ctx, TestConfig)
-	rabbitInstance := setupRabbitContainer(ctx, TestConfig)
 	mailpitInstance := setupMailContainer(ctx, TestConfig)
 
 	setupApplication(TestConfig)
@@ -41,7 +38,6 @@ func RunTests(test *testing.M) {
 	code := test.Run()
 
 	_ = mysqlInstance.Terminate(ctx)
-	_ = rabbitInstance.Terminate(ctx)
 	_ = mailpitInstance.Terminate(ctx)
 	os.Exit(code)
 }
@@ -77,26 +73,6 @@ func setupDatabaseContainer(ctx context.Context, cfg *config.Config) *mysql.MySQ
 	cfg.Database.Connections[config.Default] = databaseConfig
 
 	return mysqlInstance
-}
-
-// setupRabbitContainer starts a RabbitMQ container and updates the configuration.
-func setupRabbitContainer(ctx context.Context, cfg *config.Config) *rabbitmq.RabbitMQContainer {
-	rabbitContainer, err := rabbitmq.Run(ctx, "rabbitmq:3-management-alpine",
-		rabbitmq.WithAdminPassword(cfg.RabbitMQ.Password),
-		rabbitmq.WithAdminUsername(cfg.RabbitMQ.User),
-	)
-
-	if err != nil {
-		panic(err)
-	}
-
-	host, _ := rabbitContainer.Host(ctx)
-	port, _ := rabbitContainer.MappedPort(ctx, nat.Port(cfg.RabbitMQ.Port))
-
-	cfg.RabbitMQ.Host = host
-	cfg.RabbitMQ.Port = port.Port()
-
-	return rabbitContainer
 }
 
 // setupMailContainer starts a Mailpit container and updates the configuration.

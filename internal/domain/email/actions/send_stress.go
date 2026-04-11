@@ -11,7 +11,7 @@ import (
 	"path/filepath"
 
 	"github.com/go-mail/mail/v2"
-	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
+	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 )
 
 type SendStress struct {
