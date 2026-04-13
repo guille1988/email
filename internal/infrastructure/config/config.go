@@ -25,6 +25,7 @@ type MailConfig struct {
 type KafkaConfig struct {
 	Brokers            string
 	RebalanceTimeoutMs int
+	WorkerPoolSize     int
 }
 
 // AppConfig represents the application configuration.
@@ -130,6 +131,7 @@ func New() (*Config, error) {
 		Kafka: KafkaConfig{
 			Brokers:            env.GetEnvAsString("KAFKA_BROKERS", "kafka:9092"),
 			RebalanceTimeoutMs: env.GetEnvAsInt("KAFKA_REBALANCE_TIMEOUT_MS", 600000),
+			WorkerPoolSize:     env.GetEnvAsInt("KAFKA_WORKER_POOL_SIZE", 20),
 		},
 		Mail: MailConfig{
 			Host:     env.GetEnvAsString("MAIL_HOST", "mailpit"),

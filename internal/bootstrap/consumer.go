@@ -64,7 +64,11 @@ func RunConsumer(appInstance *app.App) error {
 	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepository)
 	sendStressAction := actions.NewSendStress(appInstance.Config.Mail, emailRepository)
 
-	provider := messaging.NewKafkaConsumer(appInstance.Config.Kafka.Brokers, appInstance.Config.Kafka.RebalanceTimeoutMs)
+	provider := messaging.NewKafkaConsumer(
+		appInstance.Config.Kafka.Brokers,
+		appInstance.Config.Kafka.RebalanceTimeoutMs,
+		appInstance.Config.Kafka.WorkerPoolSize,
+	)
 
 	defer func() {
 		if err := provider.Close(); err != nil {
