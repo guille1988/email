@@ -22,6 +22,7 @@ const (
 
 type Email struct {
 	ID        uint        `gorm:"primaryKey" json:"id"`
+	EventID   string      `gorm:"uniqueIndex;size:64;not null" json:"event_id"`
 	To        string      `gorm:"size:255;index;not null" json:"to"`
 	Subject   string      `gorm:"size:255;not null" json:"subject"`
 	Body      string      `gorm:"type:text;not null" json:"body"`

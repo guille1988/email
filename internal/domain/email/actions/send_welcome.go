@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 
@@ -27,20 +28,27 @@ func NewSendWelcome(cfg config.MailConfig, emailRepository model.Repository) *Se
 	}
 }
 
-func (action *SendWelcome) Execute(to, name, verificationURL string) error {
+func (action *SendWelcome) Execute(to, name, verificationURL, eventID string) error {
 	emailRecord := &model.Email{
+		EventID: eventID,
 		To:      to,
 		Subject: "Verify your email - Go App",
 		Status:  model.Pending,
 		Type:    model.WelcomeEmail,
 	}
 
-	if err := action.emailRepository.Create(emailRecord); err != nil {
+	err := action.emailRepository.Create(emailRecord)
+
+	if err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return nil
+		}
+
 		return err
 	}
 
 	templatePath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
-	_, err := os.Stat(templatePath)
+	_, err = os.Stat(templatePath)
 
 	// Fallback for tests running from email/tests/integration/emails
 	if os.IsNotExist(err) {

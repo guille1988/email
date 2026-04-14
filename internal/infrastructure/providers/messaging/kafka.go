@@ -2,6 +2,7 @@ package messaging
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -10,7 +11,7 @@ import (
 )
 
 type MessageHandler interface {
-	Handle(body []byte) error
+	Handle(body []byte, eventID string) error
 }
 
 type topicEntry struct {
@@ -43,6 +44,21 @@ func (consumer *KafkaConsumer) Register(queue, _, _, routingKey string, handler 
 	return nil
 }
 
+func commitWithRetry(ctx context.Context, cl *kgo.Client, label string) {
+	for i := 0; i < 3; i++ {
+		err := cl.CommitUncommittedOffsets(ctx)
+
+		if err != nil {
+			slog.Error(label, "attempt", i+1, "error", err)
+			time.Sleep(100 * time.Millisecond)
+
+			continue
+		}
+
+		return
+	}
+}
+
 func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 	topics := make([]string, 0, len(consumer.entries))
 	for _, e := range consumer.entries {
@@ -58,6 +74,9 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 		kgo.BlockRebalanceOnPoll(),
 		kgo.RebalanceTimeout(consumer.rebalanceTimeout),
 		kgo.Balancers(kgo.CooperativeStickyBalancer()),
+		kgo.OnPartitionsRevoked(func(ctx context.Context, cl *kgo.Client, _ map[string][]int32) {
+			commitWithRetry(ctx, cl, "failed to commit offsets on revoke")
+		}),
 	)
 	if err != nil {
 		return err
@@ -99,22 +118,17 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 
 					slog.Info("message received from kafka", "topic", rec.Topic)
 
+					eventID := fmt.Sprintf("%d:%d", rec.Partition, rec.Offset)
 					if handler, ok := handlers[rec.Topic]; ok {
-						err = handler.Handle(rec.Value)
-
-						if err != nil {
-							slog.Error("handler error", "error", err)
+						if handlerErr := handler.Handle(rec.Value, eventID); handlerErr != nil {
+							slog.Error("handler error", "error", handlerErr)
 						}
 					}
 				}(record)
 			})
 			waitGroup.Wait()
 
-			err = consumer.client.CommitUncommittedOffsets(ctx)
-
-			if err != nil {
-				slog.Error("failed to commit offsets", "error", err)
-			}
+			commitWithRetry(ctx, consumer.client, "failed to commit offsets")
 		}
 	}()
 

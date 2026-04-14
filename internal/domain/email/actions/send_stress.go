@@ -9,9 +9,11 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
+
+	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 
 	"github.com/go-mail/mail/v2"
-	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 )
 
 type SendStress struct {
@@ -26,8 +28,9 @@ func NewSendStress(cfg config.MailConfig, emailRepository model.Repository) *Sen
 	}
 }
 
-func (action *SendStress) Execute(to, name string) error {
+func (action *SendStress) Execute(to, name, eventID string) error {
 	emailRecord := &model.Email{
+		EventID: eventID,
 		To:      to,
 		Subject: "Stress Test — Go App",
 		Status:  model.Pending,
@@ -35,6 +38,9 @@ func (action *SendStress) Execute(to, name string) error {
 	}
 
 	if err := action.emailRepository.Create(emailRecord); err != nil {
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return nil
+		}
 		return err
 	}
 
