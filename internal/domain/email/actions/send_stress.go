@@ -19,12 +19,31 @@ import (
 type SendStress struct {
 	dialer          *mail.Dialer
 	emailRepository model.Repository
+	template        *template.Template
 }
 
 func NewSendStress(cfg config.MailConfig, emailRepository model.Repository) *SendStress {
+	primaryPath := filepath.Join("internal", "domain", "email", "templates", "stress_test.html")
+	fallbackPath := filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "stress_test.html")
+
+	templatePath := primaryPath
+	_, err := os.Stat(primaryPath)
+
+	if os.IsNotExist(err) {
+		templatePath = fallbackPath
+	}
+
+	var tmpl *template.Template
+	tmpl, err = template.ParseFiles(templatePath)
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse stress email template: %v", err))
+	}
+
 	return &SendStress{
 		dialer:          mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password),
 		emailRepository: emailRepository,
+		template:        tmpl,
 	}
 }
 
@@ -44,29 +63,13 @@ func (action *SendStress) Execute(to, name, eventID string) error {
 		return err
 	}
 
-	templatePath := filepath.Join("internal", "domain", "email", "templates", "stress_test.html")
-	_, err := os.Stat(templatePath)
-
-	// Fallback for tests running from email/tests/integration/emails
-	if os.IsNotExist(err) {
-		templatePath = filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "stress_test.html")
-	}
-
-	var tmpl *template.Template
-	tmpl, err = template.ParseFiles(templatePath)
-
-	if err != nil {
-		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)
-		return fmt.Errorf("failed to parse template: %w", err)
-	}
-
 	var body bytes.Buffer
 	dataStress := dtos.StressEmail{
 		Name:  name,
 		Email: to,
 	}
 
-	err = tmpl.Execute(&body, dataStress)
+	err := action.template.Execute(&body, dataStress)
 
 	if err != nil {
 		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)

@@ -19,12 +19,31 @@ import (
 type SendWelcome struct {
 	dialer          *mail.Dialer
 	emailRepository model.Repository
+	template        *template.Template
 }
 
 func NewSendWelcome(cfg config.MailConfig, emailRepository model.Repository) *SendWelcome {
+	primaryPath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
+	fallbackPath := filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
+
+	templatePath := primaryPath
+	_, err := os.Stat(primaryPath)
+
+	if os.IsNotExist(err) {
+		templatePath = fallbackPath
+	}
+
+	var tmpl *template.Template
+	tmpl, err = template.ParseFiles(templatePath)
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse welcome email template: %v", err))
+	}
+
 	return &SendWelcome{
 		dialer:          mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password),
 		emailRepository: emailRepository,
+		template:        tmpl,
 	}
 }
 
@@ -47,21 +66,6 @@ func (action *SendWelcome) Execute(to, name, verificationURL, eventID string) er
 		return err
 	}
 
-	templatePath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
-	_, err = os.Stat(templatePath)
-
-	// Fallback for tests running from email/tests/integration/emails
-	if os.IsNotExist(err) {
-		templatePath = filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
-	}
-	var tmpl *template.Template
-	tmpl, err = template.ParseFiles(templatePath)
-
-	if err != nil {
-		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)
-		return fmt.Errorf("failed to parse template: %w", err)
-	}
-
 	var body bytes.Buffer
 	dataWelcome := dtos.WelcomeEmail{
 		Name:            name,
@@ -69,7 +73,7 @@ func (action *SendWelcome) Execute(to, name, verificationURL, eventID string) er
 		VerificationURL: verificationURL,
 	}
 
-	err = tmpl.Execute(&body, dataWelcome)
+	err = action.template.Execute(&body, dataWelcome)
 
 	if err != nil {
 		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)
