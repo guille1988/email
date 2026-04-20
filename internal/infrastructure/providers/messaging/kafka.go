@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/twmb/franz-go/pkg/kgo"
@@ -109,7 +108,6 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 
 			sem := make(chan struct{}, consumer.workerPoolSize)
 			var waitGroup sync.WaitGroup
-			var batchFailed atomic.Bool
 
 			fetches.EachRecord(func(record *kgo.Record) {
 				waitGroup.Add(1)
@@ -128,16 +126,15 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 
 						if handlerErr != nil {
 							slog.Error("handler error", "error", handlerErr)
-							batchFailed.Store(true)
+						} else {
+							consumer.client.MarkCommitRecords(rec)
 						}
 					}
 				}(record)
 			})
 			waitGroup.Wait()
 
-			if !batchFailed.Load() {
-				commitWithRetry(ctx, consumer.client, "failed to commit offsets")
-			}
+			commitWithRetry(ctx, consumer.client, "failed to commit offsets")
 		}
 	}()
 
