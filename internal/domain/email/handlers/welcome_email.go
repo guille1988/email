@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
+	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 )
 
 type WelcomeEmail struct {
@@ -18,7 +18,7 @@ func NewWelcomeEmail(action *actions.SendWelcome) *WelcomeEmail {
 	}
 }
 
-func (handler *WelcomeEmail) Handle(body []byte) error {
+func (handler *WelcomeEmail) Handle(body []byte, eventID string) error {
 	var dto dtos.WelcomeEmail
 	err := json.Unmarshal(body, &dto)
 
@@ -26,5 +26,5 @@ func (handler *WelcomeEmail) Handle(body []byte) error {
 		return fmt.Errorf("failed to unmarshal welcome email dto: %w", err)
 	}
 
-	return handler.action.Execute(dto.Email, dto.Name, dto.VerificationURL)
+	return handler.action.Execute(dto.Email, dto.Name, dto.VerificationURL, eventID)
 }

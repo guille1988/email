@@ -9,8 +9,9 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
-	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
+	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 
 	"github.com/go-mail/mail/v2"
 )
@@ -18,40 +19,51 @@ import (
 type SendWelcome struct {
 	dialer          *mail.Dialer
 	emailRepository model.Repository
+	template        *template.Template
 }
 
 func NewSendWelcome(cfg config.MailConfig, emailRepository model.Repository) *SendWelcome {
+	primaryPath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
+	fallbackPath := filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
+
+	templatePath := primaryPath
+	_, err := os.Stat(primaryPath)
+
+	if os.IsNotExist(err) {
+		templatePath = fallbackPath
+	}
+
+	var tmpl *template.Template
+	tmpl, err = template.ParseFiles(templatePath)
+
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse welcome email template: %v", err))
+	}
+
 	return &SendWelcome{
 		dialer:          mail.NewDialer(cfg.Host, cfg.Port, cfg.User, cfg.Password),
 		emailRepository: emailRepository,
+		template:        tmpl,
 	}
 }
 
-func (action *SendWelcome) Execute(to, name, verificationURL string) error {
+func (action *SendWelcome) Execute(to, name, verificationURL, eventID string) error {
 	emailRecord := &model.Email{
+		EventID: eventID,
 		To:      to,
 		Subject: "Verify your email - Go App",
 		Status:  model.Pending,
 		Type:    model.WelcomeEmail,
 	}
 
-	if err := action.emailRepository.Create(emailRecord); err != nil {
-		return err
-	}
-
-	templatePath := filepath.Join("internal", "domain", "email", "templates", "welcome_user.html")
-	_, err := os.Stat(templatePath)
-
-	// Fallback for tests running from email/tests/integration/emails
-	if os.IsNotExist(err) {
-		templatePath = filepath.Join("..", "..", "..", "internal", "domain", "email", "templates", "welcome_user.html")
-	}
-	var tmpl *template.Template
-	tmpl, err = template.ParseFiles(templatePath)
+	err := action.emailRepository.Create(emailRecord)
 
 	if err != nil {
-		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)
-		return fmt.Errorf("failed to parse template: %w", err)
+		if strings.Contains(err.Error(), "Duplicate entry") {
+			return nil
+		}
+
+		return err
 	}
 
 	var body bytes.Buffer
@@ -61,7 +73,7 @@ func (action *SendWelcome) Execute(to, name, verificationURL string) error {
 		VerificationURL: verificationURL,
 	}
 
-	err = tmpl.Execute(&body, dataWelcome)
+	err = action.template.Execute(&body, dataWelcome)
 
 	if err != nil {
 		_ = action.emailRepository.UpdateStatus(emailRecord.ID, model.Failed)

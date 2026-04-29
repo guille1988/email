@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/guille1988/go-app-shared/messaging/rabbitmq/dtos"
+	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 )
 
 type StressEmail struct {
@@ -18,7 +18,7 @@ func NewStressEmail(action *actions.SendStress) *StressEmail {
 	}
 }
 
-func (handler *StressEmail) Handle(body []byte) error {
+func (handler *StressEmail) Handle(body []byte, eventID string) error {
 	var dto dtos.StressEmail
 	err := json.Unmarshal(body, &dto)
 
@@ -26,5 +26,5 @@ func (handler *StressEmail) Handle(body []byte) error {
 		return fmt.Errorf("failed to unmarshal stress email dto: %w", err)
 	}
 
-	return handler.action.Execute(dto.Email, dto.Name)
+	return handler.action.Execute(dto.Email, dto.Name, eventID)
 }
