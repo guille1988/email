@@ -22,21 +22,21 @@ func TestStressEmailModule(test *testing.T) {
 		to := fmt.Sprintf("stress-%d@example.com", time.Now().UnixNano())
 		name := "Stress Tester"
 
-		emailRepo := model.NewRepository(integration.TestApp.Container.DefaultConnection)
-		sendStressAction := actions.NewSendStress(integration.TestConfig.Mail, emailRepo)
+		emailRepository := model.NewRepository(integration.TestApp.Container.DefaultConnection)
+		sendStressAction := actions.NewSendStress(integration.TestConfig.Mail, emailRepository)
 		handler := handlers.NewStressEmail(sendStressAction)
 		body, _ := json.Marshal(dtos.StressEmail{Email: to, Name: name})
-		err := handler.Handle(body)
+		err := handler.Handle(body, "0:0")
 		assert.NoError(test, err)
 
-		emailRecord, err := emailRepo.FindByTo(to)
+		emailRecord, err := emailRepository.FindByTo(to)
 		assert.NoError(test, err)
 		assert.Equal(test, model.Sent, emailRecord.Status)
 		assert.Equal(test, "Stress Test — Go App", emailRecord.Subject)
 		assert.Equal(test, model.StressEmail, emailRecord.Type)
 
-		var resp *http.Response
-		resp, err = http.Get(fmt.Sprintf("http://%s:%d/api/v1/messages",
+		var response *http.Response
+		response, err = http.Get(fmt.Sprintf("http://%s:%d/api/v1/messages",
 			integration.TestConfig.Mail.Host, integration.MailpitApiPort))
 		assert.NoError(test, err)
 
@@ -45,20 +45,20 @@ func TestStressEmailModule(test *testing.T) {
 			if err != nil {
 				panic(err)
 			}
-		}(resp.Body)
+		}(response.Body)
 
-		mailBody, _ := io.ReadAll(resp.Body)
-		var mailpitResp struct {
+		mailBody, _ := io.ReadAll(response.Body)
+		var mailpitResponse struct {
 			Messages []struct {
 				To []struct {
 					Address string `json:"Address"`
 				} `json:"To"`
 			} `json:"messages"`
 		}
-		_ = json.Unmarshal(mailBody, &mailpitResp)
+		_ = json.Unmarshal(mailBody, &mailpitResponse)
 
 		found := false
-		for _, msg := range mailpitResp.Messages {
+		for _, msg := range mailpitResponse.Messages {
 			for _, recipient := range msg.To {
 				if recipient.Address == to {
 					found = true

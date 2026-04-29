@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS emails (
     id SERIAL PRIMARY KEY,
+    event_id VARCHAR(64) NOT NULL UNIQUE,
     `to` VARCHAR(255) NOT NULL,
     subject VARCHAR(255) NOT NULL,
     body TEXT NOT NULL,
