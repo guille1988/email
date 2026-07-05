@@ -46,7 +46,7 @@ func (consumer *KafkaConsumer) Register(queue, _, _, routingKey string, handler 
 
 func commitWithRetry(ctx context.Context, cl *kgo.Client, label string) {
 	for i := 0; i < 3; i++ {
-		err := cl.CommitUncommittedOffsets(ctx)
+		err := cl.CommitMarkedOffsets(ctx)
 
 		if err != nil {
 			slog.Error(label, "attempt", i+1, "error", err)
@@ -70,10 +70,10 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 		kgo.ConsumerGroup(consumer.groupID),
 		kgo.ConsumeTopics(topics...),
 		kgo.AllowAutoTopicCreation(),
-		kgo.DisableAutoCommit(),
 		kgo.BlockRebalanceOnPoll(),
 		kgo.RebalanceTimeout(consumer.rebalanceTimeout),
 		kgo.Balancers(kgo.CooperativeStickyBalancer()),
+		kgo.AutoCommitMarks(),
 		kgo.OnPartitionsRevoked(func(ctx context.Context, cl *kgo.Client, _ map[string][]int32) {
 			commitWithRetry(ctx, cl, "failed to commit offsets on revoke")
 		}),
@@ -94,6 +94,7 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 		for {
 			fetches := consumer.client.PollFetches(ctx)
 			if ctx.Err() != nil {
+				consumer.client.AllowRebalance()
 				return
 			}
 
@@ -103,6 +104,7 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 				for _, theError := range errs {
 					slog.Error("kafka fetch error", "error", theError.Err)
 				}
+				consumer.client.AllowRebalance()
 				continue
 			}
 
@@ -118,7 +120,7 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 
 					slog.Info("message received from kafka", "topic", rec.Topic)
 
-					eventID := fmt.Sprintf("%d:%d", rec.Partition, rec.Offset)
+					eventID := fmt.Sprintf("%s:%d:%d", rec.Topic, rec.Partition, rec.Offset)
 					handler, ok := handlers[rec.Topic]
 
 					if ok {
@@ -135,6 +137,7 @@ func (consumer *KafkaConsumer) StartAll(ctx context.Context) error {
 			waitGroup.Wait()
 
 			commitWithRetry(ctx, consumer.client, "failed to commit offsets")
+			consumer.client.AllowRebalance()
 		}
 	}()
 

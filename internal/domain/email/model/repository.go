@@ -1,8 +1,21 @@
 package model
 
 import (
+	"errors"
+
+	"github.com/go-sql-driver/mysql"
 	"gorm.io/gorm"
 )
+
+// mysqlDuplicateEntryErrorCode is the MySQL error number for a unique/primary key violation.
+const mysqlDuplicateEntryErrorCode = 1062
+
+// IsDuplicateEntry reports whether err is a MySQL duplicate-key violation.
+func IsDuplicateEntry(err error) bool {
+	var mysqlErr *mysql.MySQLError
+
+	return errors.As(err, &mysqlErr) && mysqlErr.Number == mysqlDuplicateEntryErrorCode
+}
 
 type Repository interface {
 	Create(email *Email) error

@@ -9,7 +9,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/guille1988/go-app-shared/messaging/kafka/dtos"
 
@@ -57,7 +56,7 @@ func (action *SendStress) Execute(to, name, eventID string) error {
 	}
 
 	if err := action.emailRepository.Create(emailRecord); err != nil {
-		if strings.Contains(err.Error(), "Duplicate entry") {
+		if model.IsDuplicateEntry(err) {
 			return nil
 		}
 		return err
