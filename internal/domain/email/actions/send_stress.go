@@ -56,10 +56,21 @@ func (action *SendStress) Execute(to, name, eventID string) error {
 	}
 
 	if err := action.emailRepository.Create(emailRecord); err != nil {
-		if model.IsDuplicateEntry(err) {
+		if !model.IsDuplicateEntry(err) {
+			return err
+		}
+
+		existing, findErr := action.emailRepository.FindByEventID(eventID)
+
+		if findErr != nil {
+			return findErr
+		}
+
+		if existing.Status == model.Sent {
 			return nil
 		}
-		return err
+
+		emailRecord = existing
 	}
 
 	var body bytes.Buffer

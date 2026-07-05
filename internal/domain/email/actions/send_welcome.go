@@ -58,11 +58,21 @@ func (action *SendWelcome) Execute(to, name, verificationURL, eventID string) er
 	err := action.emailRepository.Create(emailRecord)
 
 	if err != nil {
-		if model.IsDuplicateEntry(err) {
+		if !model.IsDuplicateEntry(err) {
+			return err
+		}
+
+		existing, findErr := action.emailRepository.FindByEventID(eventID)
+
+		if findErr != nil {
+			return findErr
+		}
+
+		if existing.Status == model.Sent {
 			return nil
 		}
 
-		return err
+		emailRecord = existing
 	}
 
 	var body bytes.Buffer
