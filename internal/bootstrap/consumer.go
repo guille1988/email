@@ -57,8 +57,6 @@ func NewConsumer() (*app.App, error) {
 // RunConsumer starts the consumer.
 func RunConsumer(appInstance *app.App) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	defer appInstance.CloseAll()
 
 	emailRepository := model.NewRepository(appInstance.Container.DefaultConnection)
 	sendWelcomeAction := actions.NewSendWelcome(appInstance.Config.Mail, emailRepository)
@@ -70,10 +68,21 @@ func RunConsumer(appInstance *app.App) error {
 		appInstance.Config.Kafka.WorkerPoolSize,
 	)
 
+	/*
+		Runs exactly once, on every return path (including early errors):
+		stop the poll loop from starting new batches, wait for the in-flight
+		one to finish, close the Kafka client, then close everything else.
+	*/
 	defer func() {
-		if err := provider.Close(); err != nil {
-			slog.Error("failed to close Kafka provider", "error", err)
+		cancel()
+
+		if closeErr := provider.Close(); closeErr != nil {
+			slog.Error("failed to close Kafka provider", "error", closeErr)
 		}
+
+		appInstance.CloseAll()
+
+		slog.Info("consumer stopped safely")
 	}()
 
 	err := provider.Register(
@@ -112,7 +121,8 @@ func RunConsumer(appInstance *app.App) error {
 
 	slog.Info("consumer is running and waiting for messages...")
 	<-stop
-	slog.Info("consumer stopped safely")
+
+	slog.Info("shutting down: waiting for in-flight messages to finish...")
 
 	return nil
 }

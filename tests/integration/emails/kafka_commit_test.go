@@ -80,7 +80,6 @@ func TestKafkaCommitMarks(test *testing.T) {
 		assert.NoError(test, err)
 
 		ctxTwo, cancelTwo := context.WithCancel(context.Background())
-		defer cancelTwo()
 		err = consumerTwo.StartAll(ctxTwo)
 		assert.NoError(test, err)
 
@@ -91,6 +90,7 @@ func TestKafkaCommitMarks(test *testing.T) {
 			test.Fatal("message was not redelivered to a fresh consumer in the same group — offset was committed despite the handler failing")
 		}
 
+		cancelTwo()
 		_ = consumerTwo.Close()
 	})
 }
