@@ -55,9 +55,11 @@ func TestKafkaConsumerShutdownDrainsInFlightWork(test *testing.T) {
 			test.Fatal("timed out waiting for the handler to start")
 		}
 
-		// Simulate a shutdown signal arriving while the handler is still
-		// mid-flight (asleep for 2s). Close must not return before that
-		// elapses, and the handler must have already finished by then.
+		/*
+		 Simulate a shutdown signal arriving while the handler is still
+		 mid-flight (asleep for 2s). Close must not return before that
+		 elapses, and the handler must have already finished by then.
+		*/
 		closeStartedAt := time.Now()
 		cancel()
 		err = consumer.Close()
