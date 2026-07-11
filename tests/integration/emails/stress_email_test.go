@@ -29,7 +29,9 @@ func TestStressEmailModule(test *testing.T) {
 		err := handler.Handle(body, "0:0")
 		assert.NoError(test, err)
 
-		emailRecord, err := emailRepository.FindByTo(to)
+		var emailRecord *model.Email
+		emailRecord, err = emailRepository.FindByTo(to)
+
 		assert.NoError(test, err)
 		assert.Equal(test, model.Sent, emailRecord.Status)
 		assert.Equal(test, "Stress Test — Go App", emailRecord.Subject)
@@ -48,6 +50,7 @@ func TestStressEmailModule(test *testing.T) {
 		}(response.Body)
 
 		mailBody, _ := io.ReadAll(response.Body)
+
 		var mailpitResponse struct {
 			Messages []struct {
 				To []struct {
@@ -58,6 +61,7 @@ func TestStressEmailModule(test *testing.T) {
 		_ = json.Unmarshal(mailBody, &mailpitResponse)
 
 		found := false
+
 		for _, msg := range mailpitResponse.Messages {
 			for _, recipient := range msg.To {
 				if recipient.Address == to {
